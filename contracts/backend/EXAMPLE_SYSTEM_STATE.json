@@ -1,0 +1,45 @@
+{
+    "simulation": {
+        "current_time": 8.0,
+        "start": 0.0,
+        "end": 24.0,
+        "status": "IDLE"
+    },
+    "strategy": {
+        "active_strategy": "BALANCED"
+    },
+    "emergency": {
+        "active": false
+    },
+    "building": {
+        "total_building_demand": 60.0
+    },
+    "allocations": [
+        {
+            "station_id": "CS-01",
+            "allocated_power": 11.0
+        }
+    ],
+    "evs": [
+        {
+            "ev_id": "EV-001",
+            "vehicle_type": "Car",
+            "urgency": "NORMAL",
+            "battery_capacity": 60.0,
+            "range": 300.0,
+            "current_soc": 20.0,
+            "requested_travel_distance": 100.0,
+            "arrival": 7.5,
+            "departure": 17.5,
+            "minimum_rate": 1.4,
+            "maximum_rate": 11.0,
+            "current_rate": 11.0,
+            "energy_required": 10.0,
+            "time_remaining": 10.0,
+            "required_average_power": 1.0,
+            "estimated_completion": 8.5,
+            "a3_risk": false,
+            "a2_reason": "Optimal allocation"
+        }
+    ]
+}

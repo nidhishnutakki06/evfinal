@@ -1,0 +1,68 @@
+{
+    "type": "object",
+    "properties": {
+        "simulation": {
+            "type": "object",
+            "properties": {
+                "current_time": {"type": "number"},
+                "start": {"type": "number"},
+                "end": {"type": "number"},
+                "status": {"type": "string"}
+            }
+        },
+        "strategy": {
+            "type": "object",
+            "properties": {
+                "active_strategy": {"type": "string"}
+            }
+        },
+        "emergency": {
+            "type": "object",
+            "properties": {
+                "active": {"type": "boolean"}
+            }
+        },
+        "building": {
+            "type": "object",
+            "properties": {
+                "total_building_demand": {"type": "number"}
+            }
+        },
+        "allocations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "station_id": {"type": "string"},
+                    "allocated_power": {"type": "number"}
+                }
+            }
+        },
+        "evs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "ev_id": {"type": "string"},
+                    "vehicle_type": {"type": "string"},
+                    "urgency": {"type": "string"},
+                    "battery_capacity": {"type": "number"},
+                    "range": {"type": "number"},
+                    "current_soc": {"type": "number"},
+                    "requested_travel_distance": {"type": "number"},
+                    "arrival": {"type": "number"},
+                    "departure": {"type": "number"},
+                    "minimum_rate": {"type": "number"},
+                    "maximum_rate": {"type": "number"},
+                    "current_rate": {"type": "number"},
+                    "energy_required": {"type": "number"},
+                    "time_remaining": {"type": "number"},
+                    "required_average_power": {"type": "number"},
+                    "estimated_completion": {"type": "number"},
+                    "a3_risk": {"type": "boolean"},
+                    "a2_reason": {"type": "string"}
+                }
+            }
+        }
+    }
+}
