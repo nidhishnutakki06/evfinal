@@ -1,0 +1,533 @@
+{
+  "$defs": {
+    "Alert": {
+      "properties": {
+        "alert_id": {
+          "title": "Alert Id",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/AlertCategory"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "number"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alert_id",
+        "type",
+        "message",
+        "timestamp",
+        "severity"
+      ],
+      "title": "Alert",
+      "type": "object"
+    },
+    "AlertCategory": {
+      "enum": [
+        "A3_PREDICTIVE_RISK",
+        "EMERGENCY_EVENT",
+        "SAFETY_EVENT"
+      ],
+      "title": "AlertCategory",
+      "type": "string"
+    },
+    "Allocation": {
+      "properties": {
+        "ev_id": {
+          "title": "Ev Id",
+          "type": "string"
+        },
+        "allocated_rate": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Allocated Rate",
+          "type": "number"
+        },
+        "allocation_status": {
+          "default": "PENDING",
+          "title": "Allocation Status",
+          "type": "string"
+        },
+        "grid_contribution": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Grid Contribution",
+          "type": "number"
+        },
+        "solar_contribution": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Solar Contribution",
+          "type": "number"
+        }
+      },
+      "required": [
+        "ev_id"
+      ],
+      "title": "Allocation",
+      "type": "object"
+    },
+    "Building": {
+      "properties": {
+        "ac_demand": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Ac Demand",
+          "type": "number"
+        },
+        "lights_demand": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Lights Demand",
+          "type": "number"
+        },
+        "lifts_demand": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Lifts Demand",
+          "type": "number"
+        },
+        "appliances_demand": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Appliances Demand",
+          "type": "number"
+        },
+        "total_building_demand": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Total Building Demand",
+          "type": "number"
+        }
+      },
+      "title": "Building",
+      "type": "object"
+    },
+    "EV": {
+      "properties": {
+        "ev_id": {
+          "title": "Ev Id",
+          "type": "string"
+        },
+        "vehicle_type": {
+          "title": "Vehicle Type",
+          "type": "string"
+        },
+        "battery_capacity": {
+          "exclusiveMinimum": 0.0,
+          "title": "Battery Capacity",
+          "type": "number"
+        },
+        "range": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Range",
+          "type": "number"
+        },
+        "current_soc": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Current Soc",
+          "type": "number"
+        },
+        "target_soc": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Target Soc",
+          "type": "number"
+        },
+        "requested_travel_distance": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Requested Travel Distance",
+          "type": "number"
+        },
+        "arrival": {
+          "title": "Arrival",
+          "type": "number"
+        },
+        "departure": {
+          "title": "Departure",
+          "type": "number"
+        },
+        "minimum_rate": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Minimum Rate",
+          "type": "number"
+        },
+        "maximum_rate": {
+          "minimum": 0.0,
+          "title": "Maximum Rate",
+          "type": "number"
+        },
+        "current_rate": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Current Rate",
+          "type": "number"
+        },
+        "energy_required": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Energy Required",
+          "type": "number"
+        },
+        "time_remaining": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Time Remaining",
+          "type": "number"
+        },
+        "required_average_power": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Required Average Power",
+          "type": "number"
+        },
+        "urgency": {
+          "default": "NORMAL",
+          "title": "Urgency",
+          "type": "string"
+        },
+        "priority_score": {
+          "default": 0.0,
+          "title": "Priority Score",
+          "type": "number"
+        },
+        "estimated_completion": {
+          "default": 0.0,
+          "title": "Estimated Completion",
+          "type": "number"
+        },
+        "estimated_soc_at_departure": {
+          "default": 0.0,
+          "title": "Estimated Soc At Departure",
+          "type": "number"
+        },
+        "deadline_status": {
+          "default": "ON_TRACK",
+          "title": "Deadline Status",
+          "type": "string"
+        },
+        "physical_feasibility": {
+          "default": true,
+          "title": "Physical Feasibility",
+          "type": "boolean"
+        },
+        "current_allocation_feasibility": {
+          "default": true,
+          "title": "Current Allocation Feasibility",
+          "type": "boolean"
+        },
+        "a3_risk": {
+          "default": "NONE",
+          "title": "A3 Risk",
+          "type": "string"
+        },
+        "a2_reason": {
+          "default": "INIT",
+          "title": "A2 Reason",
+          "type": "string"
+        },
+        "grid_contribution": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Grid Contribution",
+          "type": "number"
+        },
+        "solar_contribution": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Solar Contribution",
+          "type": "number"
+        },
+        "station_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Station Id"
+        }
+      },
+      "required": [
+        "ev_id",
+        "vehicle_type",
+        "battery_capacity",
+        "current_soc",
+        "target_soc",
+        "arrival",
+        "departure",
+        "maximum_rate"
+      ],
+      "title": "EV",
+      "type": "object"
+    },
+    "Emergency": {
+      "properties": {
+        "emergency_active_state": {
+          "default": false,
+          "title": "Emergency Active State",
+          "type": "boolean"
+        },
+        "emergency_limit": {
+          "minimum": 0.0,
+          "title": "Emergency Limit",
+          "type": "number"
+        }
+      },
+      "required": [
+        "emergency_limit"
+      ],
+      "title": "Emergency",
+      "type": "object"
+    },
+    "Environment": {
+      "properties": {
+        "weather": {
+          "default": "Sunny",
+          "title": "Weather",
+          "type": "string"
+        },
+        "time_of_day": {
+          "default": "Morning",
+          "title": "Time Of Day",
+          "type": "string"
+        }
+      },
+      "title": "Environment",
+      "type": "object"
+    },
+    "Grid": {
+      "properties": {
+        "configured_limit": {
+          "minimum": 0.0,
+          "title": "Configured Limit",
+          "type": "number"
+        },
+        "active_limit": {
+          "minimum": 0.0,
+          "title": "Active Limit",
+          "type": "number"
+        },
+        "grid_import": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Grid Import",
+          "type": "number"
+        },
+        "available_capacity": {
+          "default": 0.0,
+          "title": "Available Capacity",
+          "type": "number"
+        },
+        "safety_state": {
+          "default": "SAFE",
+          "title": "Safety State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "configured_limit",
+        "active_limit"
+      ],
+      "title": "Grid",
+      "type": "object"
+    },
+    "Simulation": {
+      "properties": {
+        "simulation_time": {
+          "default": 0.0,
+          "title": "Simulation Time",
+          "type": "number"
+        },
+        "is_running": {
+          "default": false,
+          "title": "Is Running",
+          "type": "boolean"
+        },
+        "timestep": {
+          "default": 1.0,
+          "title": "Timestep",
+          "type": "number"
+        }
+      },
+      "title": "Simulation",
+      "type": "object"
+    },
+    "Solar": {
+      "properties": {
+        "generation": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Generation",
+          "type": "number"
+        },
+        "usable_solar": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Usable Solar",
+          "type": "number"
+        },
+        "excess_solar": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Excess Solar",
+          "type": "number"
+        }
+      },
+      "title": "Solar",
+      "type": "object"
+    },
+    "Station": {
+      "properties": {
+        "station_id": {
+          "title": "Station Id",
+          "type": "string"
+        },
+        "occupancy": {
+          "default": false,
+          "title": "Occupancy",
+          "type": "boolean"
+        },
+        "connected_ev_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Connected Ev Id"
+        },
+        "capacity": {
+          "exclusiveMinimum": 0.0,
+          "title": "Capacity",
+          "type": "number"
+        },
+        "minimum_charging_rate": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Minimum Charging Rate",
+          "type": "number"
+        },
+        "maximum_charging_rate": {
+          "minimum": 0.0,
+          "title": "Maximum Charging Rate",
+          "type": "number"
+        },
+        "allocated_power": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Allocated Power",
+          "type": "number"
+        },
+        "status": {
+          "default": "AVAILABLE",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "station_id",
+        "capacity",
+        "maximum_charging_rate"
+      ],
+      "title": "Station",
+      "type": "object"
+    },
+    "Strategy": {
+      "properties": {
+        "active_strategy": {
+          "$ref": "#/$defs/StrategyType",
+          "default": "DEADLINE_FIRST"
+        }
+      },
+      "title": "Strategy",
+      "type": "object"
+    },
+    "StrategyType": {
+      "enum": [
+        "DEADLINE_FIRST",
+        "SOLAR_FIRST",
+        "GRID_SAFETY_FIRST"
+      ],
+      "title": "StrategyType",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "simulation": {
+      "$ref": "#/$defs/Simulation"
+    },
+    "environment": {
+      "$ref": "#/$defs/Environment"
+    },
+    "grid": {
+      "$ref": "#/$defs/Grid"
+    },
+    "building": {
+      "$ref": "#/$defs/Building"
+    },
+    "solar": {
+      "$ref": "#/$defs/Solar"
+    },
+    "stations": {
+      "items": {
+        "$ref": "#/$defs/Station"
+      },
+      "title": "Stations",
+      "type": "array"
+    },
+    "evs": {
+      "items": {
+        "$ref": "#/$defs/EV"
+      },
+      "title": "Evs",
+      "type": "array"
+    },
+    "allocations": {
+      "items": {
+        "$ref": "#/$defs/Allocation"
+      },
+      "title": "Allocations",
+      "type": "array"
+    },
+    "alerts": {
+      "items": {
+        "$ref": "#/$defs/Alert"
+      },
+      "title": "Alerts",
+      "type": "array"
+    },
+    "strategy": {
+      "$ref": "#/$defs/Strategy"
+    },
+    "emergency": {
+      "$ref": "#/$defs/Emergency"
+    }
+  },
+  "required": [
+    "grid",
+    "emergency"
+  ],
+  "title": "SystemState",
+  "type": "object"
+}
