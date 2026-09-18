@@ -80,10 +80,10 @@ def to_backend_state(state: SystemState) -> Dict[str, Any]:
     
     # 4. Grid, Environment, Solar
     backend_dict["grid"] = {
-        "configured_limit_kw": state.grid.configured_limit_kw,
-        "active_limit_kw": state.grid.active_limit_kw,
-        "current_import_kw": state.grid.current_import_kw,
-        "available_capacity_kw": state.grid.available_capacity_kw,
+        "configured_limit": state.grid.configured_limit_kw,
+        "active_limit": state.grid.active_limit_kw,
+        "grid_import": state.grid.current_import_kw,
+        "available_capacity": state.grid.available_capacity_kw,
         "safety_state": state.grid.safety_state.value,
         "emergency_mode": state.grid.emergency_mode
     }
@@ -94,7 +94,9 @@ def to_backend_state(state: SystemState) -> Dict[str, Any]:
     }
     
     backend_dict["solar"] = {
-        "generation_kw": state.solar.generation_kw
+        "generation": state.solar.generation_kw,
+        "usable_solar": state.solar.usable_solar_kw,
+        "excess_solar": state.solar.excess_solar_kw
     }
     
     # 5. Stations
@@ -103,14 +105,14 @@ def to_backend_state(state: SystemState) -> Dict[str, Any]:
         st_dict = {
             "station_id": st.station_id,
             "connected_ev_id": st.connected_ev_id,
-            "station_capacity_kw": st.station_capacity_kw,
-            "min_charging_rate_kw": st.min_charging_rate_kw,
-            "max_charging_rate_kw": st.max_charging_rate_kw,
-            "occupied": st.occupied,
-            "current_allocated_power_kw": st.current_allocated_power_kw,
+            "capacity": st.station_capacity_kw,
+            "minimum_charging_rate": st.min_charging_rate_kw,
+            "maximum_charging_rate": st.max_charging_rate_kw,
+            "occupancy": st.occupied,
+            "allocated_power": st.current_allocated_power_kw,
             "status": st.status.value,
-            "grid_contribution_kw": st.grid_contribution_kw,
-            "renewable_contribution_kw": st.renewable_contribution_kw
+            "grid_contribution": st.grid_contribution_kw,
+            "renewable_contribution": st.renewable_contribution_kw
         }
         backend_stations.append(st_dict)
     backend_dict["stations"] = backend_stations
@@ -119,8 +121,10 @@ def to_backend_state(state: SystemState) -> Dict[str, Any]:
     allocations_list = []
     for st in state.stations:
         allocations_list.append({
-            "station_id": st.station_id,
-            "allocated_power": st.current_allocated_power_kw
+            "ev_id": st.connected_ev_id or "",
+            "allocated_rate": st.current_allocated_power_kw,
+            "allocation_status": "ACTIVE" if st.current_allocated_power_kw > 0 else "PENDING",
+            "grid_contribution": st.grid_contribution_kw
         })
     backend_dict["allocations"] = allocations_list
     
@@ -134,6 +138,7 @@ def to_backend_state(state: SystemState) -> Dict[str, Any]:
             "battery_capacity": ev.battery_capacity_kwh,
             "range": ev.expected_range_km,
             "current_soc": ev.current_soc,
+            "target_soc": ev.target_soc if ev.target_soc is not None else 80.0,
             "requested_travel_distance": ev.requested_travel_distance_km,
             "arrival": ev.arrival_time,
             "departure": ev.departure_time,
@@ -143,9 +148,11 @@ def to_backend_state(state: SystemState) -> Dict[str, Any]:
             "energy_required": ev.energy_required_kwh,
             "time_remaining": ev.time_remaining_hours,
             "required_average_power": ev.required_average_power_kw,
-            "estimated_completion": ev.estimated_completion_time,
-            "a3_risk": ev.predictive_risk_flag,
-            "a2_reason": ev.reason
+            "estimated_completion": ev.estimated_completion_time or 0.0,
+            "a3_risk": "HIGH_RISK" if ev.predictive_risk_flag else "NONE",
+            "a2_reason": ev.reason or "INIT",
+            "grid_contribution": ev.grid_contribution_kw,
+            "solar_contribution": ev.solar_contribution_kw
         }
         backend_evs.append(ev_dict)
     backend_dict["evs"] = backend_evs
@@ -160,7 +167,7 @@ def from_backend_state(backend_dict: Dict[str, Any]) -> SystemState:
     Translates backend canonical state into a brand new internal engine SystemState.
     """
     sim_dict = backend_dict.get("simulation", {})
-    sim_status_str = sim_dict.get("status", "IDLE")
+    sim_status_str = sim_dict.get("status", "IDLE").upper()
     is_running = sim_dict.get("is_running", False)
     if is_running:
         sim_status_str = "RUNNING"
@@ -174,17 +181,17 @@ def from_backend_state(backend_dict: Dict[str, Any]) -> SystemState:
 
     env_dict = backend_dict.get("environment", {})
     environment = Environment(
-        weather=WeatherCondition(env_dict.get("weather", "SUNNY")),
-        time_of_day=TimeOfDay(env_dict.get("time_of_day", "MORNING"))
+        weather=WeatherCondition(env_dict.get("weather", "SUNNY").upper()),
+        time_of_day=TimeOfDay(env_dict.get("time_of_day", "MORNING").upper())
     )
 
     grid_dict = backend_dict.get("grid", {})
     grid = Grid(
-        configured_limit_kw=grid_dict.get("configured_limit_kw", 150.0),
-        active_limit_kw=grid_dict.get("active_limit_kw", 150.0),
-        current_import_kw=grid_dict.get("current_import_kw", 0.0),
-        available_capacity_kw=grid_dict.get("available_capacity_kw", 150.0),
-        safety_state=SafetyState(grid_dict.get("safety_state", "NORMAL")),
+        configured_limit_kw=grid_dict.get("configured_limit", 150.0),
+        active_limit_kw=grid_dict.get("active_limit", 150.0),
+        current_import_kw=grid_dict.get("grid_import", 0.0),
+        available_capacity_kw=grid_dict.get("available_capacity", 150.0),
+        safety_state=SafetyState(grid_dict.get("safety_state", "NORMAL").upper()),
         emergency_mode=grid_dict.get("emergency_mode", False)
     )
 
@@ -204,7 +211,7 @@ def from_backend_state(backend_dict: Dict[str, Any]) -> SystemState:
 
     sol_dict = backend_dict.get("solar", {})
     solar = Solar(
-        generation_kw=sol_dict.get("generation_kw", 0.0)
+        generation_kw=sol_dict.get("generation", 0.0)
     )
 
     stations = []
@@ -212,14 +219,14 @@ def from_backend_state(backend_dict: Dict[str, Any]) -> SystemState:
         stations.append(Station(
             station_id=st_dict.get("station_id"),
             connected_ev_id=st_dict.get("connected_ev_id"),
-            station_capacity_kw=st_dict.get("station_capacity_kw", 0.0),
-            min_charging_rate_kw=st_dict.get("min_charging_rate_kw", 0.0),
-            max_charging_rate_kw=st_dict.get("max_charging_rate_kw", 0.0),
-            occupied=st_dict.get("occupied", False),
-            current_allocated_power_kw=st_dict.get("current_allocated_power_kw", 0.0),
-            status=StationStatus(st_dict.get("status", "AVAILABLE")),
-            grid_contribution_kw=st_dict.get("grid_contribution_kw", 0.0),
-            renewable_contribution_kw=st_dict.get("renewable_contribution_kw", 0.0)
+            station_capacity_kw=st_dict.get("capacity", 0.0),
+            min_charging_rate_kw=st_dict.get("minimum_charging_rate", 0.0),
+            max_charging_rate_kw=st_dict.get("maximum_charging_rate", 0.0),
+            occupied=st_dict.get("occupancy", False),
+            current_allocated_power_kw=st_dict.get("allocated_power", 0.0),
+            status=StationStatus(st_dict.get("status", "AVAILABLE").upper()),
+            grid_contribution_kw=st_dict.get("grid_contribution", 0.0),
+            renewable_contribution_kw=st_dict.get("renewable_contribution", 0.0)
         ))
 
     ev_to_station = {}
@@ -233,7 +240,7 @@ def from_backend_state(backend_dict: Dict[str, Any]) -> SystemState:
         if v_type_str not in VEHICLE_TYPE_MAPPING:
             raise ValueError(f"Unmapped semantic value for vehicle_type: {v_type_str}")
         
-        urgency_str = backend_ev.get("urgency", "NORMAL")
+        urgency_str = backend_ev.get("urgency", "NORMAL").upper()
         if urgency_str not in URGENCY_MAPPING:
             raise ValueError(f"Unmapped semantic value for urgency: {urgency_str}")
             
@@ -248,21 +255,29 @@ def from_backend_state(backend_dict: Dict[str, Any]) -> SystemState:
             current_soc=backend_ev.get("current_soc", 0.0),
             requested_travel_distance_km=backend_ev.get("requested_travel_distance", 0.0),
             arrival_time=backend_ev.get("arrival", 0.0),
-            departure_time=backend_ev.get("departure", 0.0),
+            departure_time=backend_ev.get("departure", 24.0),
             min_charging_rate_kw=backend_ev.get("minimum_rate", 0.0),
             max_charging_rate_kw=backend_ev.get("maximum_rate", 0.0),
             current_charging_rate_kw=backend_ev.get("current_rate", 0.0),
+            grid_contribution_kw=backend_ev.get("grid_contribution", 0.0),
+            solar_contribution_kw=backend_ev.get("solar_contribution", 0.0),
+            target_soc=backend_ev.get("target_soc"),
             energy_required_kwh=backend_ev.get("energy_required", 0.0),
             time_remaining_hours=backend_ev.get("time_remaining", 0.0),
             required_average_power_kw=backend_ev.get("required_average_power", 0.0),
+            priority_score=0.0,
             estimated_completion_time=backend_ev.get("estimated_completion"),
-            predictive_risk_flag=backend_ev.get("a3_risk", False),
-            reason=backend_ev.get("a2_reason", "")
+            estimated_soc_at_departure=backend_ev.get("estimated_soc_at_departure", 0.0),
+            deadline_status=DeadlineStatus(backend_ev.get("deadline_status", "ON_TRACK").upper()),
+            physical_feasibility=backend_ev.get("physical_feasibility", True)
         ))
 
     allocations = {}
     for alloc in backend_dict.get("allocations", []):
-        allocations[alloc["station_id"]] = alloc["allocated_power"]
+        # Map back to station_id for internal engine backwards compatibility if possible
+        st_id = ev_to_station.get(alloc.get("ev_id"))
+        if st_id:
+            allocations[st_id] = alloc.get("allocated_rate", 0.0)
 
     strat_dict = backend_dict.get("strategy", {})
     strategy = strat_dict.get("active_strategy", "BALANCED")
