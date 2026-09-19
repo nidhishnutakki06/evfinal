@@ -12,7 +12,6 @@ class ControlService:
 
     def _merge_result(self, candidate: SystemState, result: CalculationResult) -> SystemState:
         # Applies optimization calculation results to the candidate state.
-        # Phase 7: Result is empty, so candidate remains unchanged.
         return candidate
 
     def _orchestrate(self, candidate_state: SystemState) -> SystemState:
