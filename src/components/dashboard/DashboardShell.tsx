@@ -32,23 +32,18 @@ const handleCreated = ({ gl }: { gl: any }) => {
 // Isolated from DashboardShell's reactive systemState updates
 const DigitalTwinCanvas = React.memo(() => (
   <DigitalTwinErrorBoundary>
-    <Suspense fallback={
-      <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 bg-zinc-950">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-500" />
-        <p className="text-lg">Loading 3D Environment...</p>
-      </div>
-    }>
-      <Canvas
-        shadows
-        camera={CAMERA_CONFIG}
-        onPointerMissed={handlePointerMissed}
-        dpr={DPR_CONFIG}
-        gl={GL_CONFIG}
-        onCreated={handleCreated}
-      >
+    <Canvas
+      shadows
+      camera={CAMERA_CONFIG}
+      onPointerMissed={handlePointerMissed}
+      dpr={DPR_CONFIG}
+      gl={GL_CONFIG}
+      onCreated={handleCreated}
+    >
+      <Suspense fallback={null}>
         <DigitalTwinScene />
-      </Canvas>
-    </Suspense>
+      </Suspense>
+    </Canvas>
   </DigitalTwinErrorBoundary>
 ));
 
@@ -64,9 +59,9 @@ export const DashboardShell: React.FC = () => {
 
       {/* Transparent UI Overlay Layer */}
       {!systemState ? (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-zinc-500 bg-white dark:bg-black pointer-events-auto">
-          <Loader2 className="w-8 h-8 animate-spin text-black dark:text-white mb-4" />
-          <p className="text-sm font-bold uppercase tracking-wider text-black dark:text-white">Initializing simulation boundary...</p>
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-zinc-500 pointer-events-auto">
+          <Loader2 className="w-12 h-12 animate-spin mb-4 text-blue-500" />
+          <p className="text-xl font-semibold">Initializing simulation boundary...</p>
         </div>
       ) : (
         <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between">

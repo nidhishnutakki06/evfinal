@@ -17,8 +17,12 @@ function App() {
     const initialize = async () => {
       if (env.IS_DEV_PREVIEW) {
         console.info("[DEV PREVIEW] Bypassing REST and WebSocket. Loading example state.");
-        setSystemState(exampleStateRaw as unknown as SystemState);
-        setConnectionStatus('disconnected'); // Controlled explicitly by the badge indicator
+        import("react").then((React) => {
+          React.startTransition(() => {
+            setSystemState(exampleStateRaw as unknown as SystemState);
+            setConnectionStatus('disconnected'); // Controlled explicitly by the badge indicator
+          })
+        });
         return;
       }
 
@@ -26,7 +30,11 @@ function App() {
       try {
         const state = await stateApi.getState()
         if (mounted && state) {
-          setSystemState(state)
+          import("react").then((React) => {
+            React.startTransition(() => {
+              setSystemState(state)
+            })
+          })
         }
       } catch (err) {
         console.error("Failed to fetch initial SystemState from REST:", err)
@@ -46,7 +54,11 @@ function App() {
 
     const unsubscribeMessage = wsClient.subscribe((data) => {
       if (mounted && data) {
-        setSystemState(data)
+        import("react").then((React) => {
+          React.startTransition(() => {
+            setSystemState(data)
+          })
+        })
       }
     })
 

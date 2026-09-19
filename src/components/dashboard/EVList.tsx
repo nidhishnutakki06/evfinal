@@ -9,7 +9,7 @@ export const EVList: React.FC = () => {
   if (!evs) return null;
 
   return (
-    <div className="space-y-4 h-full flex flex-col bg-zinc-900/70 backdrop-blur-md border border-zinc-700/50 p-4 rounded-2xl shadow-lg">
+    <div className="space-y-4 h-full flex flex-col bg-zinc-900/90 border border-zinc-700/50 p-4 rounded-2xl shadow-lg">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold text-zinc-200 flex items-center gap-2">
           <Car size={20} className="text-blue-500" /> Active Operations
