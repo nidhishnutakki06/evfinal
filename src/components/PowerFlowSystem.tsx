@@ -1,60 +1,96 @@
 import { useSystemState } from '../state/MockState'
-import { Line } from '@react-three/drei'
-import { useRef, useState } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 
-function FlowLines({ flows }: { flows: Array<{ path: Array<[number,number,number]>, power: number, color: string }> }) {
-  const [dashOffset, setDashOffset] = useState(0)
-  const accumulated = useRef(0)
+interface FlowItem {
+  path: Array<[number, number, number]>
+  power: number
+  color: string
+}
+
+function SingleFlow({ path, power, color }: FlowItem) {
+  const pulseRef1 = useRef<THREE.Mesh>(null)
+  const pulseRef2 = useRef<THREE.Mesh>(null)
+  const pulseRef3 = useRef<THREE.Mesh>(null)
+  const progress = useRef(0)
+
+  const curve = useMemo(() => {
+    const c = new THREE.CurvePath<THREE.Vector3>()
+    for (let j = 0; j < path.length - 1; j++) {
+      c.add(new THREE.LineCurve3(new THREE.Vector3(...path[j]), new THREE.Vector3(...path[j + 1])))
+    }
+    return c
+  }, [path])
+
+  const radius = Math.min(0.12, Math.max(0.04, power * 0.012))
+
+  const { outerGeom, innerGeom } = useMemo(() => {
+    const outer = new THREE.TubeGeometry(curve, 32, radius, 8, false)
+    const inner = new THREE.TubeGeometry(curve, 32, radius * 0.45, 8, false)
+    return { outerGeom: outer, innerGeom: inner }
+  }, [curve, radius])
+
+  useEffect(() => {
+    return () => {
+      outerGeom.dispose()
+      innerGeom.dispose()
+    }
+  }, [outerGeom, innerGeom])
 
   useFrame((_, delta) => {
-    accumulated.current -= delta * 4
-    setDashOffset(accumulated.current)
+    progress.current = (progress.current + delta * 0.6) % 1
+    const p1 = progress.current
+    const p2 = (progress.current + 0.33) % 1
+    const p3 = (progress.current + 0.66) % 1
+
+    if (pulseRef1.current) pulseRef1.current.position.copy(curve.getPointAt(p1))
+    if (pulseRef2.current) pulseRef2.current.position.copy(curve.getPointAt(p2))
+    if (pulseRef3.current) pulseRef3.current.position.copy(curve.getPointAt(p3))
   })
 
   return (
+    <group>
+      {/* Outer glowing conduit */}
+      <mesh geometry={outerGeom}>
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.6}
+          transparent
+          opacity={0.35}
+          roughness={0.3}
+        />
+      </mesh>
+
+      {/* Inner bright core */}
+      <mesh geometry={innerGeom}>
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.75} />
+      </mesh>
+
+      {/* Animated traveling energy pulses along the conduit */}
+      <mesh ref={pulseRef1}>
+        <sphereGeometry args={[radius * 2.0, 8, 8]} />
+        <meshBasicMaterial color="#ffffff" />
+      </mesh>
+      <mesh ref={pulseRef2}>
+        <sphereGeometry args={[radius * 2.0, 8, 8]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+      <mesh ref={pulseRef3}>
+        <sphereGeometry args={[radius * 2.0, 8, 8]} />
+        <meshBasicMaterial color="#ffffff" />
+      </mesh>
+    </group>
+  )
+}
+
+function FlowLines({ flows }: { flows: FlowItem[] }) {
+  return (
     <>
-      {flows.map(({ path, power, color }, i) => {
-        const thickness = Math.min(18, Math.max(3, power * 1.5))
-        const dashSize = Math.max(0.5, 3 - power * 0.1) 
-        
-        return (
-          <group key={i}>
-            {/* Base soft glow line (continuous) */}
-            <Line
-              points={path}
-              color={color}
-              lineWidth={thickness * 1.5}
-              transparent
-              opacity={0.15}
-            />
-            {/* Core intense dashed energy flow */}
-            <Line
-              points={path}
-              color={color}
-              lineWidth={thickness}
-              dashed
-              dashSize={dashSize}
-              dashScale={2}
-              dashOffset={dashOffset}
-              transparent
-              opacity={0.9}
-            />
-            {/* Inner bright core */}
-            <Line
-              points={path}
-              color="#ffffff"
-              lineWidth={thickness * 0.4}
-              dashed
-              dashSize={dashSize}
-              dashScale={2}
-              dashOffset={dashOffset}
-              transparent
-              opacity={0.8}
-            />
-          </group>
-        )
-      })}
+      {flows.map((flow, i) => (
+        <SingleFlow key={i} {...flow} />
+      ))}
     </>
   )
 }

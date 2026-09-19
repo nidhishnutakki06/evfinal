@@ -5,7 +5,7 @@ import { stateApi } from "@/services/api/state"
 import { useDomainStore } from "@/store"
 import { env } from "@/config/env"
 import type { SystemState } from "@/types/system.types"
-import exampleStateRaw from "../CONTRACT/EXAMPLE_SYSTEM_STATE.json"
+import exampleStateRaw from "../contract/EXAMPLE_SYSTEM_STATE.json"
 
 function App() {
   const setSystemState = useDomainStore(state => state.setSystemState)
