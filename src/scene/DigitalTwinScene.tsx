@@ -12,8 +12,47 @@ import { PowerFlowSystem } from '../components/PowerFlowSystem'
 import { WeatherEnvironment } from '../components/WeatherEnvironment'
 import { Roads } from '../components/Roads'
 import { Landscaping } from '../components/Landscaping'
+import { useSystemState } from '../state/MockState'
+
+const STATION_POSITIONS: [number, number, number][] = [
+  [-7.5, 0, 7.5],
+  [-4.5, 0, 7.5],
+  [-1.5, 0, 7.5],
+  [1.5, 0, 7.5],
+  [4.5, 0, 7.5],
+  [7.5, 0, 7.5]
+];
+
+const EV_STATION_POSITIONS: [number, number, number][] = [
+  [-7.5, 0, 10],
+  [-4.5, 0, 10],
+  [-1.5, 0, 10],
+  [1.5, 0, 10],
+  [4.5, 0, 10],
+  [7.5, 0, 10]
+];
+
+const WAITING_POSITIONS: [number, number, number][] = [
+  [14.5, 0, 10],
+  [17.5, 0, 10]
+];
+
+const EV_COMPONENTS: Record<string, React.FC<any>> = {
+  suv: SUV,
+  sedan: Sedan,
+  hatchback: Hatchback,
+  scooter: Scooter,
+  bike: Bike
+};
 
 export function DigitalTwinScene() {
+  const state = useSystemState();
+
+  const stations = state.stations || [];
+  const evs = state.evs || [];
+
+  let waitingIndex = 0;
+
   return (
     <>
       <OrbitControls
@@ -46,25 +85,56 @@ export function DigitalTwinScene() {
       
       {/* Waiting Area (Non-charging parking spots) on the right side with gap */}
       <ParkingArea position={[16, 0, 10]} spots={2} isCharging={false} />
+      
       {/* Charging Stations */}
-      <ChargingStation station_id="ST-1" position={[-7.5, 0, 7.5]} />
-      <ChargingStation station_id="ST-2" position={[-4.5, 0, 7.5]} />
-      <ChargingStation station_id="ST-3" position={[-1.5, 0, 7.5]} />
-      <ChargingStation station_id="ST-4" position={[1.5, 0, 7.5]} />
-      <ChargingStation station_id="ST-5" position={[4.5, 0, 7.5]} />
-      <ChargingStation station_id="ST-6" position={[7.5, 0, 7.5]} />
+      {stations.map((st, index) => {
+        if (index >= STATION_POSITIONS.length) {
+          console.warn(`Station ${st.station_id} exceeds available 3D slots and will not be rendered.`);
+          return null;
+        }
+        return (
+          <ChargingStation 
+            key={st.station_id} 
+            station_id={st.station_id} 
+            position={STATION_POSITIONS[index]} 
+          />
+        );
+      })}
 
-      {/* EVs parked at the stations */}
-      <SUV ev_id="EV-1" position={[-7.5, 0, 10]} rotation={[0, Math.PI, 0]} />
-      <Sedan ev_id="ev_002" position={[-4.5, 0, 10]} rotation={[0, Math.PI, 0]} />
-      <Hatchback ev_id="ev_003" position={[-1.5, 0, 10]} rotation={[0, Math.PI, 0]} />
-      <Scooter ev_id="ev_004" position={[1.5, 0, 10]} rotation={[0, Math.PI, 0]} />
-      <Bike ev_id="ev_005" position={[4.5, 0, 10]} rotation={[0, Math.PI, 0]} />
-      <Sedan ev_id="ev_006" position={[7.5, 0, 10]} rotation={[0, Math.PI, 0]} />
+      {/* EVs */}
+      {evs.map((ev) => {
+        const vType = ev.vehicle_type?.toLowerCase() || '';
+        const EvComponent = EV_COMPONENTS[vType] || Sedan; // fallback to Sedan
+        
+        let position: [number, number, number] | null = null;
+        
+        if (ev.station_id) {
+          // Find the station index to map to the EV position
+          const stationIndex = stations.findIndex(s => s.station_id === ev.station_id);
+          if (stationIndex !== -1 && stationIndex < EV_STATION_POSITIONS.length) {
+            position = EV_STATION_POSITIONS[stationIndex];
+          }
+        } else {
+          // Waiting Area
+          if (waitingIndex < WAITING_POSITIONS.length) {
+            position = WAITING_POSITIONS[waitingIndex];
+            waitingIndex++;
+          } else {
+            console.warn(`Waiting EV ${ev.ev_id} exceeds available waiting slots and will not be rendered.`);
+          }
+        }
 
-      {/* Waiting EVs parked neatly in the non-charging bays on the right */}
-      <SUV ev_id="ev_007" position={[14.5, 0, 10]} rotation={[0, Math.PI, 0]} />
-      <Hatchback ev_id="ev_008" position={[17.5, 0, 10]} rotation={[0, Math.PI, 0]} />
+        if (!position) return null;
+
+        return (
+          <EvComponent 
+            key={ev.ev_id} 
+            ev_id={ev.ev_id} 
+            position={position} 
+            rotation={[0, Math.PI, 0]} 
+          />
+        );
+      })}
 
       {/* Grid and Transformer */}
       <GridInfrastructure position={[-25, 0, -20]} />

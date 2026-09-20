@@ -69,7 +69,7 @@ def test_reset_behavior():
     # Active limit should inherently restore to configured limit after reset
     assert reset_state.grid.configured_limit == 100.0
     assert reset_state.grid.active_limit == 100.0
-    assert len(reset_state.evs) == 0
+    assert len(reset_state.evs) == 8
 
 def test_initialize_from_definitions(repo):
     repo.create_ev_definition({
@@ -102,8 +102,8 @@ def test_reset_does_not_delete_database(repo):
     manager.initialize_from_definitions(repo)
     
     manager.reset_state()
-    # Live EVs are cleared from runtime
-    assert len(manager.get_state().evs) == 0
+    # Live EVs are reset to the 8 deterministic EVs instead of what was loaded from the DB
+    assert len(manager.get_state().evs) == 8
     # DB remains persistently populated
     assert len(repo.get_all_ev_definitions()) == 1
 

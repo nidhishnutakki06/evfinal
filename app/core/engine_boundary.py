@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.models.pydantic_state import SystemState
 from src.sh305.integration.adapter import from_backend_state, to_backend_state
 from src.sh305.engine.controller import _recompute
+from src.sh305.engine.simulation import step_simulation
 
 class CalculationContext(BaseModel):
     """
@@ -24,11 +25,7 @@ class EngineBoundary:
     Calculates EV priorities, allocations, and grid math based on the provided context.
     Returns deterministic results to be assembled into the canonical state by the backend.
     """
-    def calculate(self, context: CalculationContext) -> CalculationResult:
-        state = context.state
-        
-        # 1. Translate Pydantic to internal engine state
-        # We manually map because Team 2's Pydantic models deviated from the JSON schema
+    def _translate_to_internal(self, state: SystemState):
         from sh305.domain.system_state import SystemState as InternalSystemState
         from sh305.domain.simulation import Simulation
         from sh305.domain.environment import Environment, Solar
@@ -60,9 +57,9 @@ class EngineBoundary:
         if s_state == "SAFE":
             s_state = "NORMAL"
             
-        emerg_active = state.emergency.emergency_active_state if hasattr(state, "emergency") else False
+        emerg_active = state.emergency.emergency_active_state
         act_limit = max(0.001, state.grid.active_limit)
-        if emerg_active and hasattr(state.emergency, "emergency_limit"):
+        if emerg_active:
             act_limit = max(0.001, state.grid.configured_limit * (1.0 - state.emergency.emergency_limit))
             
         internal_grid = Grid(
@@ -79,6 +76,7 @@ class EngineBoundary:
             lights_demand_kw=state.building.lights_demand,
             lifts_demand_kw=state.building.lifts_demand,
             appliances_demand_kw=state.building.appliances_demand,
+            manual_demand_offset_kw=getattr(state.building, "manual_demand_offset", 0.0),
             total_demand_kw=state.building.total_building_demand
         )
         
@@ -106,7 +104,7 @@ class EngineBoundary:
                 
         internal_evs = []
         for ev in state.evs:
-            v_type_str = getattr(ev, "vehicle_type", "Car")
+            v_type_str = ev.vehicle_type
             if v_type_str not in VEHICLE_TYPE_MAPPING:
                 v_type_str = "Car"
             
@@ -120,7 +118,7 @@ class EngineBoundary:
                 vehicle_type=VEHICLE_TYPE_MAPPING[v_type_str],
                 user_urgency=URGENCY_MAPPING[urgency_str],
                 battery_capacity_kwh=ev.battery_capacity,
-                expected_range_km=max(0.001, ev.range if hasattr(ev, "range") else getattr(ev, "expected_range", 0.001)),
+                expected_range_km=max(0.001, getattr(ev, "range", getattr(ev, "expected_range", 0.001))),
                 current_soc=ev.current_soc,
                 requested_travel_distance_km=getattr(ev, "requested_travel_distance", 0.0),
                 arrival_time=ev.arrival,
@@ -156,14 +154,21 @@ class EngineBoundary:
             allocations={},
             alerts=[]
         )
-        
-        # 2. Execute Engine
-        _recompute(internal_state)
-        
-        # 3. Map back directly into context.state to avoid Pydantic schema validation crashes
-        if state.simulation.is_running:
-            internal_state.simulation.simulation_time += getattr(state.simulation, "timestep", 0.25)
+        return internal_state
+
+    def _translate_to_pydantic(self, state: SystemState, internal_state):
+        # Map back directly into context.state to avoid Pydantic schema validation crashes
         state.simulation.simulation_time = internal_state.simulation.simulation_time
+        state.environment.time_of_day = internal_state.environment.time_of_day.value.title()
+        state.environment.weather = internal_state.environment.weather.value.title()
+        
+        state.building.ac_demand = internal_state.building.ac_demand_kw
+        state.building.lights_demand = internal_state.building.lights_demand_kw
+        state.building.lifts_demand = internal_state.building.lifts_demand_kw
+        state.building.appliances_demand = internal_state.building.appliances_demand_kw
+        if hasattr(state.building, "manual_demand_offset"):
+            state.building.manual_demand_offset = internal_state.building.manual_demand_offset_kw
+        state.building.total_building_demand = internal_state.building.total_demand_kw
         
         # Clean up floating point epsilon from 0.001 boundary limits
         if internal_state.grid.current_import_kw < 0.01:
@@ -174,6 +179,7 @@ class EngineBoundary:
                 state.grid.grid_import = state.grid.active_limit
                 
         state.grid.available_capacity = internal_state.grid.available_capacity_kw
+        state.solar.generation = internal_state.solar.generation_kw
         state.solar.usable_solar = internal_state.solar.usable_solar_kw
         state.solar.excess_solar = internal_state.solar.excess_solar_kw
         
@@ -184,15 +190,19 @@ class EngineBoundary:
                 ist = st_map[st.station_id]
                 st.allocated_power = ist.current_allocated_power_kw if ist.current_allocated_power_kw >= 0.01 else 0.0
                 st.status = ist.status.value
+                st.connected_ev_id = ist.connected_ev_id
+                st.occupancy = ist.occupied
                 
         # Map EVs
         ev_map = {ev.ev_id: ev for ev in internal_state.evs}
         for ev in state.evs:
             if ev.ev_id in ev_map:
                 iev = ev_map[ev.ev_id]
+                ev.station_id = iev.station_id
+                ev.current_soc = iev.current_soc
                 if hasattr(ev, "current_rate"): ev.current_rate = iev.current_charging_rate_kw if iev.current_charging_rate_kw >= 0.01 else 0.0
                 if hasattr(ev, "energy_required"): ev.energy_required = iev.energy_required_kwh
-                if hasattr(ev, "time_remaining"): ev.time_remaining = iev.time_remaining_hours
+                if hasattr(ev, "time_remaining"): ev.time_remaining = max(0.0, iev.time_remaining_hours)
                 if hasattr(ev, "required_average_power"): ev.required_average_power = iev.required_average_power_kw
                 if hasattr(ev, "priority_score"): ev.priority_score = iev.priority_score
                 if hasattr(ev, "estimated_completion"): ev.estimated_completion = iev.estimated_completion_time or 0.0
@@ -219,5 +229,82 @@ class EngineBoundary:
                         solar_contribution=iev.solar_contribution_kw
                     ))
 
+    def seed_fleet_to_pydantic(self, state: SystemState, internal_state) -> None:
+        from app.models.pydantic_state import Station as PydanticStation, EV as PydanticEV
+        state.stations = []
+        for ist in internal_state.stations:
+            state.stations.append(PydanticStation(
+                station_id=ist.station_id,
+                capacity=ist.station_capacity_kw,
+                minimum_charging_rate=ist.min_charging_rate_kw,
+                maximum_charging_rate=ist.max_charging_rate_kw,
+                occupancy=ist.occupied,
+                connected_ev_id=ist.connected_ev_id,
+                allocated_power=ist.current_allocated_power_kw,
+                status=ist.status.value
+            ))
+            
+        state.evs = []
+        for iev in internal_state.evs:
+            state.evs.append(PydanticEV(
+                ev_id=iev.ev_id,
+                vehicle_type=iev.vehicle_type.value,
+                battery_capacity=iev.battery_capacity_kwh,
+                range=iev.expected_range_km,
+                minimum_rate=iev.min_charging_rate_kw,
+                maximum_rate=iev.max_charging_rate_kw,
+                current_soc=iev.current_soc,
+                target_soc=iev.target_soc if iev.target_soc else 100.0,
+                requested_travel_distance=iev.requested_travel_distance_km,
+                arrival=iev.arrival_time,
+                departure=iev.departure_time,
+                current_rate=iev.current_charging_rate_kw,
+                energy_required=iev.energy_required_kwh,
+                time_remaining=max(0.0, iev.time_remaining_hours),
+                required_average_power=iev.required_average_power_kw,
+                urgency=iev.user_urgency.value,
+                priority_score=iev.priority_score,
+                estimated_completion=iev.estimated_completion_time or 0.0,
+                estimated_soc_at_departure=iev.estimated_soc_at_departure or 0.0,
+                deadline_status=iev.deadline_status.value if iev.deadline_status else "ON_TRACK",
+                physical_feasibility=iev.physical_feasibility if iev.physical_feasibility is not None else True,
+                current_allocation_feasibility=iev.current_allocation_feasibility if iev.current_allocation_feasibility is not None else True,
+                a3_risk="HIGH_RISK" if iev.predictive_risk_flag else "NONE",
+                a2_reason=iev.reason,
+                grid_contribution=iev.grid_contribution_kw,
+                solar_contribution=iev.solar_contribution_kw,
+                station_id=iev.station_id
+            ))
+
+    def calculate(self, context: CalculationContext) -> CalculationResult:
+        state = context.state
+        
+        # 1. Translate Pydantic to internal engine state
+        internal_state = self._translate_to_internal(state)
+        
+        # 2. Execute Engine
+        _recompute(internal_state)
+        
+        if state.simulation.is_running:
+            internal_state.simulation.simulation_time += getattr(state.simulation, "timestep", 0.25)
+            
+        # 3. Map back directly into context.state
+        self._translate_to_pydantic(state, internal_state)
+        
         # Clear updated_state_dict since we mutate directly
+        return CalculationResult()
+
+    def step(self, context: CalculationContext) -> CalculationResult:
+        state = context.state
+        
+        # 1. Translate Pydantic to internal engine state
+        internal_state = self._translate_to_internal(state)
+        
+        # 2. Execute Engine simulation step
+        timestep = getattr(state.simulation, "timestep", 0.25)
+        step_simulation(internal_state, step_hours=timestep)
+        
+        # 3. Map back directly into context.state
+        self._translate_to_pydantic(state, internal_state)
+        
         return CalculationResult()

@@ -9,6 +9,9 @@ engine_boundary = EngineBoundary()
 state_validator = StateValidator()
 control_service = ControlService(state_manager, engine_boundary, state_validator)
 
+# Seed the live fleet on boot
+state_manager.reset_state()
+
 def get_state_manager() -> RuntimeStateManager:
     return state_manager
 

@@ -33,6 +33,7 @@ class Building(BaseModel):
     lights_demand: float = Field(0.0, ge=0.0)
     lifts_demand: float = Field(0.0, ge=0.0)
     appliances_demand: float = Field(0.0, ge=0.0)
+    manual_demand_offset: float = Field(0.0)
     total_building_demand: float = Field(0.0, ge=0.0)
 
 class Solar(BaseModel):

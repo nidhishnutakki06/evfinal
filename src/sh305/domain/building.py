@@ -9,6 +9,7 @@ class Building(BaseModel):
     lights_demand_kw: float = Field(0.0, ge=0.0, description="Lighting electrical load in kW")
     lifts_demand_kw: float = Field(0.0, ge=0.0, description="Elevator/lift power demand in kW")
     appliances_demand_kw: float = Field(0.0, ge=0.0, description="General appliance and plug load in kW")
+    manual_demand_offset_kw: float = Field(0.0, description="Manual demand offset delta in kW")
     total_demand_kw: float = Field(0.0, ge=0.0, description="Total building non-EV electrical demand in kW")
 
     @model_validator(mode="before")

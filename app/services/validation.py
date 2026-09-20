@@ -27,7 +27,7 @@ class StateValidator:
             errors.append("Building component demands cannot be negative")
         if b.total_building_demand < 0:
             errors.append("Building total demand cannot be negative")
-        expected_total = b.ac_demand + b.lights_demand + b.lifts_demand + b.appliances_demand
+        expected_total = b.ac_demand + b.lights_demand + b.lifts_demand + b.appliances_demand + getattr(b, "manual_demand_offset", 0.0)
         if abs(b.total_building_demand - expected_total) > 1e-6:
             errors.append("Building total demand does not match sum of components")
             

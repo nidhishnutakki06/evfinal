@@ -231,3 +231,12 @@ class SyntheticDataGenerator:
             strategy="BALANCED",
             emergency=False,
         )
+
+def generate_initial_fleet_and_stations(ev_count: int = 8, station_count: int = 6) -> SystemState:
+    """
+    Returns a pristine, deterministically generated initial system state, 
+    complete with stations and a realistic mix of EVs.
+    Used for live server boot and simulation resets.
+    """
+    generator = SyntheticDataGenerator(seed=42)
+    return generator.generate_initial_system_state(ev_count=ev_count, station_count=station_count)

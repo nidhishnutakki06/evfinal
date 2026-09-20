@@ -3,7 +3,9 @@
 Welcome to the SH-305 Contract Handoff Package. This directory contains the authoritative state contract and API documentation required for Frontend and 3D Teams to integrate with the backend.
 
 ## Purpose of this Package
-This package explicitly documents the stable boundaries of the backend engine. The backend serves as the absolute authority for the energy and simulation state. 
+**NOTE**: This folder (`contract/`) is the SINGLE SOURCE OF TRUTH for the backend contract. Do not trust or recreate duplicate folders like `CONTRACT/` or `contracts/backend/`.
+
+This package explicitly documents the stable boundaries of the backend engine. The backend serves as the absolute authority for the energy and simulation state.
 
 Frontend and 3D teams **should not**:
 - Inspect or depend on internal Python modules.

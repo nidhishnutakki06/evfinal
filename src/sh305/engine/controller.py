@@ -31,13 +31,14 @@ def apply_building_demand_delta(state: SystemState, delta_kw: float, step_hours:
     """
     A1 Control: Adjust building demand by a delta, recalculating bounds immediately.
     """
-    # Apply abstractly to appliances to maintain structural parity without overriding rigid time-curves
-    state.building.appliances_demand_kw = max(0.0, state.building.appliances_demand_kw + delta_kw)
+    # Accumulate into manual_demand_offset_kw to maintain structural parity without overriding rigid time-curves
+    state.building.manual_demand_offset_kw += delta_kw
     state.building.total_demand_kw = sum([
         state.building.lights_demand_kw,
         state.building.ac_demand_kw,
         state.building.lifts_demand_kw,
-        state.building.appliances_demand_kw
+        state.building.appliances_demand_kw,
+        state.building.manual_demand_offset_kw
     ])
     _recompute(state, step_hours, weights)
 

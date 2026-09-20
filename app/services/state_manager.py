@@ -73,6 +73,13 @@ class RuntimeStateManager:
             # Restore emergency constraints
             new_state.emergency.emergency_limit = current_emergency_limit
             
+            # Seed deterministic fleet and stations
+            from src.sh305.synthetic.generator import generate_initial_fleet_and_stations
+            from app.core.engine_boundary import EngineBoundary
+            internal_state = generate_initial_fleet_and_stations()
+            boundary = EngineBoundary()
+            boundary.seed_fleet_to_pydantic(new_state, internal_state)
+            
             return new_state
 
     def reset_state(self) -> None:

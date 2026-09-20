@@ -47,7 +47,8 @@ def step_simulation(state: SystemState, step_hours: float = 0.25, weights: Weigh
         state.building.lights_demand_kw,
         state.building.ac_demand_kw,
         state.building.lifts_demand_kw,
-        state.building.appliances_demand_kw
+        state.building.appliances_demand_kw,
+        state.building.manual_demand_offset_kw
     ])
     
     # 4. update solar generation

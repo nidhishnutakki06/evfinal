@@ -31,6 +31,18 @@ class ControlService:
         
         return self.state_manager.get_state()
 
+    def process_simulation_step(self) -> SystemState:
+        candidate_state = self.state_manager.get_state()
+        context = CalculationContext(state=candidate_state)
+        result = self.engine.step(context)
+        assembled_candidate = self._merge_result(candidate_state, result)
+        validation_result = self.validator.validate(assembled_candidate)
+        if not validation_result.is_valid:
+            raise ValueError(f"Candidate state rejected by validation invariants: {', '.join(validation_result.errors)}")
+        if not self.state_manager.replace_state(assembled_candidate):
+            raise ValueError("Candidate state rejected by structural constraints.")
+        return self.state_manager.get_state()
+
     def process_simulation_status(self, is_running: bool) -> SystemState:
         candidate = self.state_manager.get_state()
         candidate.simulation.is_running = is_running

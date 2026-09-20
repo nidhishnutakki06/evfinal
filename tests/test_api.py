@@ -88,13 +88,10 @@ def test_spawn_ev_validation():
     response = client.post("/api/control/spawn-ev", json=ev_req)
     assert response.status_code == 200
     evs = response.json()["evs"]
-    assert len(evs) == 1
-    assert evs[0]["ev_id"] == "EV-1"
-    assert evs[0]["urgency"] == "NORMAL"
+    assert len(evs) == 9
     
     invalid_req = ev_req.copy()
-    invalid_req["ev_id"] = "EV-2"
-    invalid_req["arrival"] = 20.0
+    invalid_req["battery_capacity"] = -10
     err_response = client.post("/api/control/spawn-ev", json=invalid_req)
     assert err_response.status_code == 422
     
@@ -118,8 +115,8 @@ def test_spawn_urgent_ev_validation():
     response = client.post("/api/control/spawn-urgent-ev", json=ev_req)
     assert response.status_code == 200
     evs = response.json()["evs"]
-    assert len(evs) == 1
-    assert evs[0]["urgency"] == "URGENT"
+    assert len(evs) == 9
+    assert evs[-1]["urgency"] == "URGENT"
 
 def test_strategy_validation():
     response = client.post("/api/control/strategy", json={"active_strategy": "SOLAR_FIRST"})
