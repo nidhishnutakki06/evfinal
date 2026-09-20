@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from app.services.state_manager import RuntimeStateManager
 from app.core.engine_boundary import EngineBoundary, CalculationContext, CalculationResult
 from app.services.validation import StateValidator
@@ -56,9 +56,12 @@ class ControlService:
             candidate.grid.active_limit = limit
         return self._orchestrate(candidate)
 
-    def process_weather(self, weather: str) -> SystemState:
+    def process_weather(self, weather: str, time_of_day: Optional[str] = None) -> SystemState:
         candidate = self.state_manager.get_state()
-        candidate.environment.weather = weather
+        if weather:
+            candidate.environment.weather = weather
+        if time_of_day:
+            candidate.environment.time_of_day = time_of_day
         return self._orchestrate(candidate)
 
     def process_spawn_ev(self, ev_data: Dict[str, Any], is_urgent: bool = False) -> SystemState:
@@ -104,7 +107,7 @@ class ControlService:
             a2_reason="INIT",
             grid_contribution=0.0,
             solar_contribution=0.0,
-            station_id=ev_data.get("station_id")
+            station_id=station_id
         )
         candidate.evs.append(new_ev)
         return self._orchestrate(candidate)

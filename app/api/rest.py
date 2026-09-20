@@ -25,6 +25,7 @@ class GridLimitRequest(BaseModel):
 
 class WeatherRequest(BaseModel):
     weather: str
+    time_of_day: Optional[str] = None
 
 class SpawnEVRequest(BaseModel):
     ev_id: str
@@ -132,7 +133,7 @@ async def update_weather(
     ws_manager: ConnectionManager = Depends(get_connection_manager)
 ):
     try:
-        new_state = control.process_weather(req.weather)
+        new_state = control.process_weather(req.weather, req.time_of_day)
         await ws_manager.broadcast_state(new_state)
         return new_state
     except ValueError as e:

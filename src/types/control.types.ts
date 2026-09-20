@@ -13,6 +13,7 @@ export interface GridLimitRequest {
 
 export interface WeatherRequest {
   weather: string;
+  time_of_day?: string;
 }
 
 export interface StrategyRequest {

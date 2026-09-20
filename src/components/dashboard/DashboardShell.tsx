@@ -12,6 +12,7 @@ import { A4StrategyControl } from './controls/A4StrategyControl';
 import { A5EmergencyControl } from './controls/A5EmergencyControl';
 import { Canvas } from '@react-three/fiber';
 import { SelectionState } from '../../state/SelectionStore';
+import { SelectionPopup } from './SelectionPopup';
 
 const DigitalTwinScene = React.lazy(() =>
   import('../../scene/DigitalTwinScene').then(module => ({ default: module.DigitalTwinScene }))
@@ -96,6 +97,8 @@ export const DashboardShell: React.FC = () => {
             <A5EmergencyControl />
             <A4StrategyControl />
           </div>
+
+          <SelectionPopup />
         </div>
       )}
     </div>

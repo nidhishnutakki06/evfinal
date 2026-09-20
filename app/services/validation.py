@@ -19,7 +19,7 @@ class StateValidator:
         if candidate.grid.configured_limit < 0: errors.append("Grid configured_limit cannot be negative")
         if candidate.grid.grid_import < 0: errors.append("Grid import cannot be negative")
         if candidate.grid.available_capacity < 0: errors.append("Grid available_capacity cannot be negative")
-        if candidate.grid.grid_import > candidate.grid.active_limit: errors.append("Grid import exceeds active limit")
+        if candidate.grid.grid_import > candidate.grid.active_limit + 1e-4: errors.append("Grid import exceeds active limit")
         
         # Building bounds
         b = candidate.building

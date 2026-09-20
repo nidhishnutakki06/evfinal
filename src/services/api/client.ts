@@ -34,7 +34,9 @@ class ApiClient {
         let errorMessage = "An error occurred";
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          errorMessage = errorData.detail 
+            ? (typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail))
+            : (errorData.message || errorMessage);
         } catch {
           // Response is not JSON
         }

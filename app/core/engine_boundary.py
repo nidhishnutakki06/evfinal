@@ -215,7 +215,8 @@ class EngineBoundary:
                         ev_id=iev.ev_id,
                         allocated_rate=iev.current_charging_rate_kw if iev.current_charging_rate_kw >= 0.01 else 0.0,
                         allocation_status="ACTIVE" if iev.current_charging_rate_kw > 0.01 else "PENDING",
-                        grid_contribution=iev.grid_contribution_kw
+                        grid_contribution=iev.grid_contribution_kw,
+                        solar_contribution=iev.solar_contribution_kw
                     ))
 
         # Clear updated_state_dict since we mutate directly

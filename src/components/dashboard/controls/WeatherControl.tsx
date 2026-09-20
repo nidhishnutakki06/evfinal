@@ -7,6 +7,7 @@ export const WeatherControl: React.FC = () => {
   const envState = useDomainStore(state => state.systemState?.environment);
   
   const [weather, setWeather] = useState<string>('');
+  const [timeOfDay, setTimeOfDay] = useState<string>('');
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,18 +15,24 @@ export const WeatherControl: React.FC = () => {
     if (envState?.weather && !isPending) {
       setWeather(envState.weather);
     }
-  }, [envState?.weather, isPending]);
+    if (envState?.time_of_day && !isPending) {
+      setTimeOfDay(envState.time_of_day);
+    }
+  }, [envState?.weather, envState?.time_of_day, isPending]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!weather.trim()) return;
+    if (!weather.trim() && !timeOfDay.trim()) return;
 
     setIsPending(true);
     setError(null);
     try {
-      await controlsApi.setWeather({ weather: weather.trim() });
+      await controlsApi.setWeather({ 
+        weather: weather.trim() || 'Sunny',
+        time_of_day: timeOfDay.trim() || undefined
+      });
     } catch (err: any) {
-      setError(err.message || 'Failed to update weather');
+      setError(err.message || 'Failed to update environment');
     } finally {
       setIsPending(false);
     }
@@ -38,20 +45,29 @@ export const WeatherControl: React.FC = () => {
         {isPending && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
       </div>
       
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input 
-          type="text" 
-          value={weather} 
-          onChange={(e) => setWeather(e.target.value)} 
-          placeholder="e.g. Sunny"
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
-        />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            value={weather} 
+            onChange={(e) => setWeather(e.target.value)} 
+            placeholder="Weather (e.g. Sunny)"
+            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
+          />
+          <input 
+            type="text" 
+            value={timeOfDay} 
+            onChange={(e) => setTimeOfDay(e.target.value)} 
+            placeholder="Time (e.g. Night)"
+            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
+          />
+        </div>
         <button 
           type="submit"
-          disabled={isPending || !weather.trim() || weather === envState?.weather}
-          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+          disabled={isPending || (!weather.trim() && !timeOfDay.trim()) || (weather === envState?.weather && timeOfDay === envState?.time_of_day)}
+          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors w-full mt-2"
         >
-          Set
+          Update Environment
         </button>
       </form>
       
